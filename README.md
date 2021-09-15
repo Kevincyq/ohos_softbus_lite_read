@@ -1,0 +1,2 @@
+# ohos_softbus_lite_read
+OpenHarmony2.0轻量级分布式软总线代码阅读
