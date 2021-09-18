@@ -1,0 +1,106 @@
+{
+  "main": {
+    "id": "797f9198becc9847",
+    "type": "split",
+    "children": [
+      {
+        "id": "083d8adc565df557",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "1 设备发现能力.md",
+            "mode": "source"
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "b329e5092729d637",
+    "type": "split",
+    "children": [
+      {
+        "id": "8eb3d157a3137bf9",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "74c71270b1b50b57",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "1e0d7a94dc0a1dfe",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "f433b61a70ed873f",
+    "type": "split",
+    "children": [
+      {
+        "id": "d2791ca82141d8e4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "f157e23af33f2ef4",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "1 设备发现能力.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "9fd85681311da3ed",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "1 设备发现能力.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "active": "083d8adc565df557",
+  "lastOpenFiles": [
+    "1 设备发现能力.md",
+    "设备发现能力.md",
+    "未命名.md",
+    "Overview.md"
+  ]
+}
