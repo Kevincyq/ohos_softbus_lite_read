@@ -35,7 +35,7 @@
  * This file provides capabilities related to device service publishing, including publishing services,
  * unpublishing services, and setting device parameters.
  * After multiple nearby devices are discovered and networked, these interfaces can be used to perform
- * service publishing-related operations. \n
+ * service publishing-related operations. 
  *
  * @since 1.0
  * @version 1.0
