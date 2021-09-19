@@ -35,7 +35,7 @@
  * This file provides capabilities related to device service publishing, including publishing services,
  * unpublishing services, and setting device parameters.
  * After multiple nearby devices are discovered and networked, these interfaces can be used to perform
- * service publishing-related operations. 
+ * service publishing-related operations.
  *
  * @since 1.0
  * @version 1.0
@@ -268,7 +268,7 @@ int PublishService(const char *moduleName, const struct PublishInfo* info, const
  * @brief Unpublishes a service based on the <b>publicId</b> and <b>moduleName</b>.
  *
  * @param moduleName Indicates the pointer to the module name of the upper-layer service.
- * The value contains a maximum of 63 bytes.
+ * The value contins a maximum of 63 bytes.
  * @param publishId Indicates the ID of the service to unpublish. The value must be greater than <b>0</b>.
  * @return Returns <b>0</b> if the operation is successful; returns a non-zero value otherwise.
  *

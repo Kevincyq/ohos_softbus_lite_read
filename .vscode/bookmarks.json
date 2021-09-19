@@ -1,0 +1,34 @@
+{
+	"files": [
+		{
+			"path": "authmanager/source/bus_manager.c",
+			"bookmarks": [
+				{
+					"line": 66,
+					"column": 8,
+					"label": "报错点1"
+				}
+			]
+		},
+		{
+			"path": "discovery/discovery_service/source/discovery_service.c",
+			"bookmarks": [
+				{
+					"line": 181,
+					"column": 4,
+					"label": "报错点3"
+				}
+			]
+		},
+		{
+			"path": "trans_service/source/libdistbus/auth_conn_manager.c",
+			"bookmarks": [
+				{
+					"line": 131,
+					"column": 16,
+					"label": "报错点2"
+				}
+			]
+		}
+	]
+}
