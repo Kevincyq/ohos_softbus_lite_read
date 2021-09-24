@@ -22,7 +22,8 @@
 #include "nstackx_device.h"
 #include "nstackx_error.h"
 #include "os_adapter.h"
-enum {
+enum
+{
     NSTACKX_INIT_STATE_START = 0,
     NSTACKX_INIT_STATE_ONGOING,
     NSTACKX_INIT_STATE_DONE,
@@ -32,7 +33,8 @@ static uint8_t g_nstackInitState = NSTACKX_INIT_STATE_START;
 int NSTACKX_Init()
 {
     int ret;
-    if (g_nstackInitState != NSTACKX_INIT_STATE_START) {
+    if (g_nstackInitState != NSTACKX_INIT_STATE_START)
+    {
         return NSTACKX_EOK;
     }
 
@@ -40,7 +42,8 @@ int NSTACKX_Init()
     cJSON_InitHooks(NULL);
 
     ret = CoapInitDiscovery();
-    if (ret != NSTACKX_EOK) {
+    if (ret != NSTACKX_EOK)
+    {
         goto L_ERR_INIT;
     }
     g_nstackInitState = NSTACKX_INIT_STATE_DONE;
@@ -48,7 +51,8 @@ int NSTACKX_Init()
 
 L_ERR_INIT:
     ret = NSTACKX_Deinit();
-    if (ret != NSTACKX_EOK) {
+    if (ret != NSTACKX_EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY] deinit fail\n");
     }
     return NSTACKX_EFAILED;
@@ -56,12 +60,14 @@ L_ERR_INIT:
 
 int NSTACKX_Deinit(void)
 {
-    if (g_nstackInitState == NSTACKX_INIT_STATE_START) {
+    if (g_nstackInitState == NSTACKX_INIT_STATE_START)
+    {
         return NSTACKX_EOK;
     }
 
     int ret = CoapDeinitDiscovery();
-    if (ret != NSTACKX_EOK) {
+    if (ret != NSTACKX_EOK)
+    {
         return ret;
     }
 
@@ -72,15 +78,18 @@ int NSTACKX_Deinit(void)
 
 int NSTACKX_RegisterDeviceAn(const NSTACKX_LocalDeviceInfo *localDeviceInfo, uint64_t deviceHash)
 {
-    if (g_nstackInitState != NSTACKX_INIT_STATE_DONE) {
+    if (g_nstackInitState != NSTACKX_INIT_STATE_DONE)
+    {
         return NSTACKX_EFAILED;
     }
 
-    if (localDeviceInfo == NULL) {
+    if (localDeviceInfo == NULL)
+    {
         return NSTACKX_EINVAL;
     }
 
-    if (ConfigureLocalDeviceInfo(localDeviceInfo) != NSTACKX_EOK) {
+    if (ConfigureLocalDeviceInfo(localDeviceInfo) != NSTACKX_EOK)
+    {
         return NSTACKX_EINVAL;
     }
     SetDeviceHash(deviceHash);
@@ -88,43 +97,51 @@ int NSTACKX_RegisterDeviceAn(const NSTACKX_LocalDeviceInfo *localDeviceInfo, uin
     return NSTACKX_EOK;
 }
 
-typedef struct {
+typedef struct
+{
     uint32_t capabilityBitmapNum;
     uint32_t capabilityBitmap[NSTACKX_MAX_CAPABILITY_NUM];
 } CapabilityProcessData;
 
 int NSTACKX_RegisterCapability(uint32_t capabilityBitmapNum, const uint32_t capabilityBitmap[])
 {
-    if (g_nstackInitState != NSTACKX_INIT_STATE_DONE) {
+    if (g_nstackInitState != NSTACKX_INIT_STATE_DONE)
+    {
         return NSTACKX_EFAILED;
     }
 
-    if (capabilityBitmapNum > NSTACKX_MAX_CAPABILITY_NUM) {
+    if (capabilityBitmapNum > NSTACKX_MAX_CAPABILITY_NUM)
+    {
         return NSTACKX_EINVAL;
     }
 
-    if (RegisterCapability(capabilityBitmapNum, capabilityBitmap) != NSTACKX_EOK) {
+    if (RegisterCapability(capabilityBitmapNum, capabilityBitmap) != NSTACKX_EOK)
+    {
         return NSTACKX_EINVAL;
     }
 
     return NSTACKX_EOK;
 }
 
-int NSTACKX_RegisterServiceData(const char* serviceData)
+int NSTACKX_RegisterServiceData(const char *serviceData)
 {
-    if (serviceData == NULL) {
+    if (serviceData == NULL)
+    {
         return NSTACKX_EINVAL;
     }
 
-    if (g_nstackInitState != NSTACKX_INIT_STATE_DONE) {
+    if (g_nstackInitState != NSTACKX_INIT_STATE_DONE)
+    {
         return NSTACKX_EFAILED;
     }
     unsigned int serviceLen = strlen(serviceData);
-    if (serviceLen >= NSTACKX_MAX_SERVICE_DATA_LEN) {
+    if (serviceLen >= NSTACKX_MAX_SERVICE_DATA_LEN)
+    {
         return NSTACKX_EINVAL;
     }
 
-    if (RegisterServiceData(serviceData, serviceLen + 1) != NSTACKX_EOK) {
+    if (RegisterServiceData(serviceData, serviceLen + 1) != NSTACKX_EOK)
+    {
         return NSTACKX_EINVAL;
     }
     return NSTACKX_EOK;

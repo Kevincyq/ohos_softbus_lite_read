@@ -32,7 +32,7 @@
 static DeviceInfo *g_deviceInfo = NULL;
 #define MAX_VALUE_SIZE 64
 #define DEVICEID_MAX_NUM 96
-#define DEVICE_ID_FILE   "/storage/data/softbus/deviceid"
+#define DEVICE_ID_FILE "/storage/data/softbus/deviceid"
 #define TWO_NUM 2
 #define NUM_TEN 10
 #define FOUR_BIT 4
@@ -43,24 +43,33 @@ int GetRandomStr(const unsigned char *data, int len, char *str, int maxCnt)
     char tmp[TWO_NUM];
     int cnt = 0;
 
-    if (data == NULL || str == NULL) {
+    if (data == NULL || str == NULL)
+    {
         return ERROR_FAIL;
     }
 
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++)
+    {
         tmp[0] = (data[i] & 0xF0) >> FOUR_BIT;
         tmp[1] = data[i] & 0x0F;
 
-        for (int j = 0; j < TWO_NUM; j++) {
-            if (tmp[j] < NUM_TEN) {
+        for (int j = 0; j < TWO_NUM; j++)
+        {
+            if (tmp[j] < NUM_TEN)
+            {
                 tmp[j] += 0x30;
-            } else if (tmp[j] < NUM_SIXTEEN) {
+            }
+            else if (tmp[j] < NUM_SIXTEEN)
+            {
                 tmp[j] = tmp[j] - NUM_TEN + 'A';
             }
-            if (cnt < maxCnt) {
+            if (cnt < maxCnt)
+            {
                 str[cnt] = tmp[j];
                 cnt++;
-            } else {
+            }
+            else
+            {
                 return ERROR_SUCCESS;
             }
         }
@@ -72,25 +81,29 @@ int GetRandomStr(const unsigned char *data, int len, char *str, int maxCnt)
 #if defined(__LITEOS_A__) || defined(__LINUX__)
 int ReadFile(char *deviceId, int len)
 {
-    if (deviceId == NULL || len <= 0) {
+    if (deviceId == NULL || len <= 0)
+    {
         return ERROR_FAIL;
     }
 
     int fd = open(DEVICE_ID_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] ReadFile get deviceid open file fail\n");
         return ERROR_FAIL;
     }
 
     int ret = lseek(fd, 0, SEEK_SET);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] ReadFile get deviceid lseek file fail\n");
         close(fd);
         return ERROR_FAIL;
     }
 
     ret = read(fd, deviceId, len);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] ReadFile read deviceid fail, ret=%d len=%d\n", ret, len);
         close(fd);
         return ERROR_FAIL;
@@ -104,40 +117,46 @@ int ReadFile(char *deviceId, int len)
 int ReadDeviceId(char *deviceId, unsigned int len)
 {
     int ret;
-    if (deviceId == NULL) {
+    if (deviceId == NULL)
+    {
         return ERROR_FAIL;
     }
 
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
     unsigned int fileLen = 0;
     int fd = UtilsFileOpen(DEVICE_ID_FILE, O_RDWR_FS | O_CREAT_FS, 0);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Read UtilsFileOpen fail\n");
         return ERROR_FAIL;
     }
 
     ret = UtilsFileStat(DEVICE_ID_FILE, &fileLen);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         UtilsFileClose(fd);
         SOFTBUS_PRINT("[DISCOVERY] Read UtilsFileStat fail\n");
         return ERROR_FAIL;
     }
 
     ret = UtilsFileSeek(fd, 0, SEEK_SET_FS);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Read UtilsFileSeek fail\n");
         UtilsFileClose(fd);
         return ERROR_FAIL;
     }
 
-    if (fileLen > len) {
+    if (fileLen > len)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Read file len not legal, clear buf\n");
         UtilsFileClose(fd);
         return 0;
     }
 
     ret = UtilsFileRead(fd, deviceId, len);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Read UtilsFileRead, ret=%d len=%d\n", ret, len);
         UtilsFileClose(fd);
         return ERROR_FAIL;
@@ -158,13 +177,15 @@ int WriteDeviceId(const char *deviceId, int len)
 
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
     fd = UtilsFileOpen(DEVICE_ID_FILE, O_RDWR_FS | O_CREAT_FS | O_TRUNC_FS, 0);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] WriteDeviceId UtilsFileOpen fail\n");
         return ERROR_FAIL;
     }
 
     ret = UtilsFileWrite(fd, deviceId, len);
-    if (ret != len) {
+    if (ret != len)
+    {
         SOFTBUS_PRINT("[DISCOVERY] UtilsFileOpen UtilsFileWrite fail\n");
         UtilsFileClose(fd);
         return ERROR_FAIL;
@@ -173,13 +194,15 @@ int WriteDeviceId(const char *deviceId, int len)
     UtilsFileClose(fd);
 #else
     fd = open(DEVICE_ID_FILE, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] WriteDeviceId open file fail\n");
         return ERROR_FAIL;
     }
 
     ret = write(fd, deviceId, len);
-    if (ret != len) {
+    if (ret != len)
+    {
         SOFTBUS_PRINT("[DISCOVERY] WriteDeviceId write fail\n");
         close(fd);
         return ERROR_FAIL;
@@ -197,29 +220,34 @@ int GetDeviceIdFromFile(char *deviceId, unsigned int len)
     unsigned char data[MAX_VALUE_SIZE] = {0};
     struct HksBlob key = {sizeof(data), data};
 
-    if (deviceId == NULL) {
+    if (deviceId == NULL)
+    {
         return ERROR_FAIL;
     }
 
     ret = ReadDeviceId(deviceId, len);
-    if ((ret == ERROR_SUCCESS) && (strlen(deviceId) == (unsigned int)len)) {
+    if ((ret == ERROR_SUCCESS) && (strlen(deviceId) == (unsigned int)len))
+    {
         return ERROR_SUCCESS;
     }
 
     ret = HksGenerateRandom(NULL, &key);
-    if (ret != 0) {
+    if (ret != 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] generate key fail\n");
         return ERROR_FAIL;
     }
 
     ret = GetRandomStr(data, MAX_VALUE_SIZE, deviceId, len);
-    if (ret != ERROR_SUCCESS) {
+    if (ret != ERROR_SUCCESS)
+    {
         SOFTBUS_PRINT("[DISCOVERY] get random fail\n");
         return ERROR_FAIL;
     }
 
     ret = WriteDeviceId(deviceId, len);
-    if (ret != ERROR_SUCCESS) {
+    if (ret != ERROR_SUCCESS)
+    {
         SOFTBUS_PRINT("[DISCOVERY] write device fail\n");
         return ERROR_FAIL;
     }
@@ -233,42 +261,49 @@ int UpdateCommonDeviceInfo(void)
     memset_s(&localDeviceInfo, sizeof(NSTACKX_LocalDeviceInfo), 0, sizeof(NSTACKX_LocalDeviceInfo));
 
     DeviceInfo *info = GetCommonDeviceInfo();
-    if (info == NULL) {
+    if (info == NULL)
+    {
         return ERROR_FAIL;
     }
 
     unsigned int ret;
     ret = strcpy_s(localDeviceInfo.name, sizeof(localDeviceInfo.name), info->deviceName);
-    if (ret != 0) {
+    if (ret != 0)
+    {
         return ret;
     }
 
     ret = strcpy_s(localDeviceInfo.deviceId, sizeof(localDeviceInfo.deviceId), info->deviceId);
-    if (ret != 0) {
+    if (ret != 0)
+    {
         return ret;
     }
 
     localDeviceInfo.deviceType = info->deviceType;
     ret = memcpy_s(localDeviceInfo.networkIpAddr, sizeof(localDeviceInfo.networkIpAddr),
                    info->deviceIp, sizeof(info->deviceIp));
-    if (ret != 0) {
+    if (ret != 0)
+    {
         return ret;
     }
 
     ret = memcpy_s(localDeviceInfo.networkName, sizeof(localDeviceInfo.networkName),
                    info->networkName, sizeof(info->networkName));
-    if (ret != 0) {
+    if (ret != 0)
+    {
         return ret;
     }
 
     ret = memcpy_s(localDeviceInfo.version, sizeof(localDeviceInfo.version),
                    info->version, sizeof(info->version));
-    if (ret != 0) {
+    if (ret != 0)
+    {
         return ret;
     }
 
     ret = NSTACKX_RegisterDeviceAn(&localDeviceInfo, 0);
-    if (ret != 0) {
+    if (ret != 0)
+    {
         return ERROR_FAIL;
     }
 
@@ -284,11 +319,15 @@ int InitLocalDeviceInfo(void)
 {
     char deviceId[DEVICEID_MAX_NUM] = {0};
 
-    if (g_deviceInfo != NULL) {
+    if (g_deviceInfo != NULL)
+    {
         memset_s(g_deviceInfo, sizeof(DeviceInfo), 0, sizeof(DeviceInfo));
-    } else {
+    }
+    else
+    {
         g_deviceInfo = (DeviceInfo *)calloc(1, sizeof(DeviceInfo));
-        if (g_deviceInfo == NULL) {
+        if (g_deviceInfo == NULL)
+        {
             return ERROR_FAIL;
         }
     }
@@ -298,7 +337,8 @@ int InitLocalDeviceInfo(void)
 
     unsigned int ret;
     ret = GetDeviceIdFromFile(deviceId, MAX_VALUE_SIZE);
-    if (ret != ERROR_SUCCESS) {
+    if (ret != ERROR_SUCCESS)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Get device fail\n");
         return ERROR_FAIL;
     }
@@ -313,7 +353,8 @@ int InitLocalDeviceInfo(void)
 
     ret |= (unsigned int)strcpy_s(g_deviceInfo->deviceId, sizeof(g_deviceInfo->deviceId), deviceId);
     ret |= (unsigned int)strcpy_s(g_deviceInfo->version, sizeof(g_deviceInfo->version), "1.0.0");
-    if (ret != 0) {
+    if (ret != 0)
+    {
         return ERROR_FAIL;
     }
 
@@ -323,7 +364,8 @@ int InitLocalDeviceInfo(void)
 
 int InitCommonManager(void)
 {
-    if (InitLocalDeviceInfo() != 0) {
+    if (InitLocalDeviceInfo() != 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] InitCommonManager fail\n");
         return ERROR_FAIL;
     }
@@ -332,7 +374,8 @@ int InitCommonManager(void)
 
 void DeinitCommonManager(void)
 {
-    if (g_deviceInfo != NULL) {
+    if (g_deviceInfo != NULL)
+    {
         free(g_deviceInfo);
         g_deviceInfo = NULL;
     }
@@ -362,7 +405,8 @@ void ListInsertTail(List *head, List *node)
 
 void ListRemoveNode(List *node)
 {
-    if (node == NULL) {
+    if (node == NULL)
+    {
         return;
     }
     node->next->prev = node->prev;
@@ -384,7 +428,8 @@ List *ListGetFront(List *head)
 List *ListPopFront(List *head)
 {
     List *element = NULL;
-    if (head == NULL || ListIsEmpty(head)) {
+    if (head == NULL || ListIsEmpty(head))
+    {
         return NULL;
     }
 
@@ -399,7 +444,8 @@ int ListLength(const List *head)
     List *pos = NULL;
     List *tmp = NULL;
 
-    LIST_FOR_EACH_SAFE(pos, tmp, head) {
+    LIST_FOR_EACH_SAFE(pos, tmp, head)
+    {
         len++;
     }
 

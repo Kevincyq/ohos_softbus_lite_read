@@ -45,11 +45,12 @@
 
 #include <securec.h>
 
-#define WIFI_QUEUE_SIZE  5
+#define WIFI_QUEUE_SIZE 5
 #define MIN_STACK_SIZE 0x8000
-typedef struct {
-    WIFI_PROC_FUNC     handler;
-    AddressEvent       state;
+typedef struct
+{
+    WIFI_PROC_FUNC handler;
+    AddressEvent state;
 } AddressEventHandler;
 
 int g_wifiQueueId = -1;
@@ -58,34 +59,35 @@ unsigned int g_wifiTaskStart = 0;
 WIFI_PROC_FUNC g_wifiCallback = NULL;
 
 #define COAP_DEFAULT_PRIO 11
-#define TEN_MS  (10 * 1000)
-#define HUNDRED_MS  (100 * 1000)
-typedef struct CoapRequest {
+#define TEN_MS (10 * 1000)
+#define HUNDRED_MS (100 * 1000)
+typedef struct CoapRequest
+{
     const char *remoteUrl;
     char *data;
     size_t dataLength;
     const char *remoteIp;
 } CoapRequest;
 
-
 unsigned int g_terminalFlag = 0;
 
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
 #define WLAN_NAME "wlan0"
 static WifiEvent g_coapEventHandler = {0};
-static void CoapConnectionChangedHandler(int state, WifiLinkedInfo* info);
+static void CoapConnectionChangedHandler(int state, WifiLinkedInfo *info);
 osThreadId_t g_coapTaskId = NULL;
 osThreadId_t g_msgQueTaskId = NULL;
 #else
 #define WLAN "wlan0"
-#define ETH  "eth0"
+#define ETH "eth0"
 intptr_t g_coapTaskId = -1;
 intptr_t g_msgQueTaskId = -1;
 intptr_t g_queryIpTaskId = -1;
 unsigned int g_updateIpFlag = 0;
 typedef void *(*Runnable)(void *argv);
 typedef struct ThreadAttr ThreadAttr;
-struct ThreadAttr {
+struct ThreadAttr
+{
     const char *name;
     uint32_t stackSize;
     uint8_t priority;
@@ -107,12 +109,14 @@ int CreateThread(Runnable run, void *argv, const ThreadAttr *attr, unsigned int 
 
 static int CoapSendRequest(const CoapRequest *coapRequest)
 {
-    if (coapRequest == NULL || coapRequest->remoteUrl == NULL) {
+    if (coapRequest == NULL || coapRequest->remoteUrl == NULL)
+    {
         return NSTACKX_EFAILED;
     }
 
     struct sockaddr_in sockAddr = {0};
-    if (coapRequest->remoteIp == NULL) {
+    if (coapRequest->remoteIp == NULL)
+    {
         return NSTACKX_EFAILED;
     }
 
@@ -121,20 +125,22 @@ static int CoapSendRequest(const CoapRequest *coapRequest)
     sockAddr.sin_family = AF_INET;
 
     int ret = CoapCreateUdpClient(&sockAddr);
-    if (ret != NSTACKX_EOK) {
+    if (ret != NSTACKX_EOK)
+    {
         return NSTACKX_EFAILED;
     }
     SocketInfo socket = {0};
     socket.cliendFd = GetCoapClientSocket();
     socket.dstAddr = sockAddr;
-    if (CoapSocketSend(&socket, (uint8_t *)coapRequest->data, coapRequest->dataLength) == -1) {
+    if (CoapSocketSend(&socket, (uint8_t *)coapRequest->data, coapRequest->dataLength) == -1)
+    {
         SOFTBUS_PRINT("[DISCOVERY]reponse coap failed.\r\n");
         return NSTACKX_EFAILED;
     }
     return NSTACKX_EOK;
 }
 
-static int CoapResponseService(const COAP_Packet *pkt, const char* remoteUrl, const char* remoteIp)
+static int CoapResponseService(const COAP_Packet *pkt, const char *remoteUrl, const char *remoteIp)
 {
     int ret;
     CoapRequest coapRequest;
@@ -142,13 +148,15 @@ static int CoapResponseService(const COAP_Packet *pkt, const char* remoteUrl, co
     coapRequest.remoteUrl = remoteUrl;
     coapRequest.remoteIp = remoteIp;
     char *payload = PrepareServiceDiscover();
-    if (payload == NULL) {
+    if (payload == NULL)
+    {
         return NSTACKX_EFAILED;
     }
 
     COAP_ReadWriteBuffer sndPktBuff = {0};
     sndPktBuff.readWriteBuf = calloc(1, COAP_MAX_PDU_SIZE);
-    if (sndPktBuff.readWriteBuf == NULL) {
+    if (sndPktBuff.readWriteBuf == NULL)
+    {
         free(payload);
         return NSTACKX_EFAILED;
     }
@@ -157,7 +165,8 @@ static int CoapResponseService(const COAP_Packet *pkt, const char* remoteUrl, co
 
     ret = BuildSendPkt(pkt, remoteIp, payload, &sndPktBuff);
     free(payload);
-    if (ret != DISCOVERY_ERR_SUCCESS) {
+    if (ret != DISCOVERY_ERR_SUCCESS)
+    {
         free(sndPktBuff.readWriteBuf);
         sndPktBuff.readWriteBuf = NULL;
         return ret;
@@ -174,32 +183,39 @@ static int CoapResponseService(const COAP_Packet *pkt, const char* remoteUrl, co
 int GetServiceDiscoverInfo(const uint8_t *buf, size_t size, DeviceInfo *deviceInfo, char **remoteUrlPtr)
 {
     uint8_t *newBuf = NULL;
-    if (size <= 0) {
+    if (size <= 0)
+    {
         return NSTACKX_EFAILED;
     }
 
-    if (buf[size - 1] != '\0') {
+    if (buf[size - 1] != '\0')
+    {
         newBuf = (uint8_t *)calloc(1, size + 1);
-        if (newBuf == NULL) {
+        if (newBuf == NULL)
+        {
             return NSTACKX_ENOMEM;
         }
-        if (memcpy_s(newBuf, size + 1, buf, size) != EOK) {
+        if (memcpy_s(newBuf, size + 1, buf, size) != EOK)
+        {
             goto L_COAP_ERR;
         }
         buf = newBuf;
     }
 
-    if (ParseServiceDiscover(buf, deviceInfo, remoteUrlPtr) != NSTACKX_EOK) {
+    if (ParseServiceDiscover(buf, deviceInfo, remoteUrlPtr) != NSTACKX_EOK)
+    {
         goto L_COAP_ERR;
     }
 
-    if (newBuf != NULL) {
+    if (newBuf != NULL)
+    {
         free(newBuf);
     }
 
     return NSTACKX_EOK;
 L_COAP_ERR:
-    if (newBuf != NULL) {
+    if (newBuf != NULL)
+    {
         free(newBuf);
     }
     return NSTACKX_EFAILED;
@@ -210,12 +226,14 @@ void PostServiceDiscover(const COAP_Packet *pkt)
     char *remoteUrl = NULL;
     DeviceInfo deviceInfo;
 
-    if (pkt == NULL) {
+    if (pkt == NULL)
+    {
         return;
     }
 
     (void)memset_s(&deviceInfo, sizeof(deviceInfo), 0, sizeof(deviceInfo));
-    if (GetServiceDiscoverInfo(pkt->payload.buffer, pkt->payload.len, &deviceInfo, &remoteUrl) != NSTACKX_EOK) {
+    if (GetServiceDiscoverInfo(pkt->payload.buffer, pkt->payload.len, &deviceInfo, &remoteUrl) != NSTACKX_EOK)
+    {
         return;
     }
 
@@ -223,7 +241,8 @@ void PostServiceDiscover(const COAP_Packet *pkt)
     (void)memset_s(wifiIpAddr, sizeof(wifiIpAddr), 0, sizeof(wifiIpAddr));
     (void)inet_ntop(AF_INET, &deviceInfo.netChannelInfo.wifiApInfo.ip, wifiIpAddr, sizeof(wifiIpAddr));
 
-    if (remoteUrl != NULL) {
+    if (remoteUrl != NULL)
+    {
         CoapResponseService(pkt, remoteUrl, wifiIpAddr);
         free(remoteUrl);
     }
@@ -233,13 +252,15 @@ static void HandleReadEvent(int fd)
 {
     int socketFd = fd;
     unsigned char *recvBuffer = calloc(1, COAP_MAX_PDU_SIZE + 1);
-    if (recvBuffer == NULL) {
+    if (recvBuffer == NULL)
+    {
         return;
     }
     ssize_t nRead;
     nRead = CoapSocketRecv(socketFd, recvBuffer, COAP_MAX_PDU_SIZE);
     if ((nRead == 0) || (nRead < 0 && errno != EAGAIN &&
-        errno != EWOULDBLOCK && errno != EINTR)) {
+                         errno != EWOULDBLOCK && errno != EINTR))
+    {
         free(recvBuffer);
         return;
     }
@@ -263,15 +284,20 @@ static void CoapReadHandle(unsigned int uwParam1, unsigned int uwParam2, unsigne
     fd_set readSet;
     int serverFd = GetCoapServerSocket();
     SOFTBUS_PRINT("[DISCOVERY] CoapReadHandle coin select begin\n");
-    while (g_terminalFlag) {
+    while (g_terminalFlag)
+    {
         FD_ZERO(&readSet);
         FD_SET(serverFd, &readSet);
         ret = select(serverFd + 1, &readSet, NULL, NULL, NULL);
-        if (ret > 0) {
-            if (FD_ISSET(serverFd, &readSet)) {
+        if (ret > 0)
+        {
+            if (FD_ISSET(serverFd, &readSet))
+            {
                 HandleReadEvent(serverFd);
             }
-        } else {
+        }
+        else
+        {
             SOFTBUS_PRINT("[DISCOVERY]ret:%d,error:%d\n", ret, errno);
         }
     }
@@ -285,7 +311,8 @@ void RegisterWifiCallback(WIFI_PROC_FUNC callback)
 
 void CoapHandleWifiEvent(unsigned int para)
 {
-    if (g_wifiCallback != NULL) {
+    if (g_wifiCallback != NULL)
+    {
         g_wifiCallback(para);
     }
 }
@@ -313,10 +340,13 @@ void CoapWifiEventThread(unsigned int uwParam1, unsigned int uwParam2, unsigned 
     unsigned int ret;
     readSize = sizeof(AddressEventHandler);
     g_wifiTaskStart = 1;
-    while (g_wifiTaskStart) {
+    while (g_wifiTaskStart)
+    {
         ret = ReadMsgQue(g_wifiQueueId, &handle, &readSize);
-        if ((ret == 0) && (readSize == sizeof(AddressEventHandler))) {
-            if (handle.handler == NULL) {
+        if ((ret == 0) && (readSize == sizeof(AddressEventHandler)))
+        {
+            if (handle.handler == NULL)
+            {
                 continue;
             }
             handle.handler(handle.state);
@@ -329,17 +359,21 @@ int CoapDeinitWifiEvent(void)
     unsigned int ret;
     g_wifiTaskStart = 0;
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
-    if (g_msgQueTaskId != NULL) {
+    if (g_msgQueTaskId != NULL)
+    {
         ret = osThreadTerminate(g_msgQueTaskId);
-        if (ret != 0) {
+        if (ret != 0)
+        {
             return -1;
         }
         g_msgQueTaskId = NULL;
     }
 #else
-    if (g_msgQueTaskId != -1) {
+    if (g_msgQueTaskId != -1)
+    {
         ret = pthread_join((pthread_t)g_msgQueTaskId, NULL);
-        if (ret != 0) {
+        if (ret != 0)
+        {
             SOFTBUS_PRINT("[DISCOVERY] pthread_join fail\n");
             return -1;
         }
@@ -347,16 +381,19 @@ int CoapDeinitWifiEvent(void)
     }
 #endif
 
-    if (g_wifiQueueId != -1) {
+    if (g_wifiQueueId != -1)
+    {
         ret = DeleteMsgQue(g_wifiQueueId);
-        if (ret != 0) {
+        if (ret != 0)
+        {
             return -1;
         }
         g_wifiQueueId = -1;
     }
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
     WifiErrorCode error = UnRegisterWifiEvent(&g_coapEventHandler);
-    if (error != WIFI_SUCCESS) {
+    if (error != WIFI_SUCCESS)
+    {
         return -1;
     }
     g_coapEventHandler.OnWifiConnectionChanged = NULL;
@@ -367,7 +404,8 @@ int CoapDeinitWifiEvent(void)
 int CreateMsgQueThread(void)
 {
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
-    if (g_msgQueTaskId != NULL) {
+    if (g_msgQueTaskId != NULL)
+    {
         return NSTACKX_EOK;
     }
 
@@ -381,20 +419,23 @@ int CreateMsgQueThread(void)
     attr.priority = osPriorityNormal4; // COAP_DEFAULT_PRIO -> cmsis prio
 
     g_msgQueTaskId = osThreadNew((osThreadFunc_t)CoapWifiEventThread, NULL, &attr);
-    if (NULL == g_msgQueTaskId) {
+    if (NULL == g_msgQueTaskId)
+    {
         SOFTBUS_PRINT("[DISCOVERY]Task Create fail\n");
         return NSTACKX_EOK;
     }
 #else
     int ret;
 
-    if (g_msgQueTaskId != -1) {
+    if (g_msgQueTaskId != -1)
+    {
         return NSTACKX_EOK;
     }
 
     ThreadAttr attr = {"wifi_event", 0x800, 20, 0, 0};
-    ret = CreateThread((Runnable)CoapWifiEventThread, NULL, &attr, (unsigned int*)&g_msgQueTaskId);
-    if (ret != 0) {
+    ret = CreateThread((Runnable)CoapWifiEventThread, NULL, &attr, (unsigned int *)&g_msgQueTaskId);
+    if (ret != 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY]Task Create fail\n");
         return ret;
     }
@@ -406,11 +447,13 @@ int CoapInitWifiEvent(void)
 {
     SOFTBUS_PRINT("[DISCOVERY] CoapInitWifiEvent\n");
     unsigned int ret;
-    if (g_wifiQueueId == -1) {
+    if (g_wifiQueueId == -1)
+    {
         ret = CreateMsgQue("/wifiQue",
-            WIFI_QUEUE_SIZE, (unsigned int*)&g_wifiQueueId,
-            0, sizeof(AddressEventHandler));
-        if (ret != 0) {
+                           WIFI_QUEUE_SIZE, (unsigned int *)&g_wifiQueueId,
+                           0, sizeof(AddressEventHandler));
+        if (ret != 0)
+        {
             SOFTBUS_PRINT("[DISCOVERY]CreateMsgQue fail\n");
             (void)CoapDeinitWifiEvent();
             return ret;
@@ -419,7 +462,8 @@ int CoapInitWifiEvent(void)
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
         g_coapEventHandler.OnWifiConnectionChanged = CoapConnectionChangedHandler;
         WifiErrorCode error = RegisterWifiEvent(&g_coapEventHandler);
-        if (error != WIFI_SUCCESS) {
+        if (error != WIFI_SUCCESS)
+        {
             SOFTBUS_PRINT("[DISCOVERY]RegisterWifiEvent fail, error:%d\n", error);
             (void)CoapDeinitWifiEvent();
             g_wifiQueueId = -1;
@@ -431,7 +475,7 @@ int CoapInitWifiEvent(void)
 }
 
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
-static void CoapConnectionChangedHandler(int state, WifiLinkedInfo* info)
+static void CoapConnectionChangedHandler(int state, WifiLinkedInfo *info)
 {
     (void)info;
     CoapWriteMsgQueue(state);
@@ -443,7 +487,8 @@ void CoapGetWifiIp(char *ip, int length)
     int ret;
 
     netif = netif_find(WLAN_NAME);
-    if (netif == NULL) {
+    if (netif == NULL)
+    {
         return;
     }
 
@@ -452,44 +497,53 @@ void CoapGetWifiIp(char *ip, int length)
     ip4_addr_t gateWay;
 
     ret = netifapi_netif_get_addr(netif, &ipAddr, &netMask, &gateWay);
-    if (ret == 0) {
+    if (ret == 0)
+    {
         inet_ntop(AF_INET, &ipAddr, ip, INET_ADDRSTRLEN);
     }
     (void)length;
     return;
 }
 #else
-typedef enum {
+typedef enum
+{
     STATUS_UP,
     STATUS_DOWN
 } InterfaceStatus;
 
-typedef struct {
+typedef struct
+{
     char ip[NSTACKX_MAX_IP_STRING_LEN];
     InterfaceStatus status;
     int flag;
 } InterfaceInfo;
 
-void GetInterfaceInfo(int fd, const char* interfaceName, int length, InterfaceInfo *info)
+void GetInterfaceInfo(int fd, const char *interfaceName, int length, InterfaceInfo *info)
 {
-    if (fd < 0 || info == NULL || interfaceName == NULL) {
+    if (fd < 0 || info == NULL || interfaceName == NULL)
+    {
         return;
     }
     struct ifreq ifr;
     memset_s(&ifr, sizeof(struct ifreq), 0, sizeof(struct ifreq));
     int ret = strncpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), interfaceName, length);
-    if (ret != EOK) {
+    if (ret != EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY] CoapGetWifiIp ifr.ifr_name cpy fail\n");
         return;
     }
 
-    if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
+    if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0)
+    {
         return;
     }
 
-    if ((unsigned short int)ifr.ifr_flags & IFF_UP) {
+    if ((unsigned short int)ifr.ifr_flags & IFF_UP)
+    {
         info->status = STATUS_UP;
-    } else {
+    }
+    else
+    {
         info->status = STATUS_DOWN;
         info->ip[0] = '\0';
         info->flag = 1;
@@ -497,17 +551,20 @@ void GetInterfaceInfo(int fd, const char* interfaceName, int length, InterfaceIn
     }
     memset_s(&ifr, sizeof(struct ifreq), 0, sizeof(struct ifreq));
     ret = strncpy_s(ifr.ifr_name, sizeof(ifr.ifr_name), interfaceName, length);
-    if (ret != EOK) {
+    if (ret != EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY] CoapGetWifiIp ifr.ifr_name cpy fail\n");
         return;
     }
 
-    if (ioctl(fd, SIOCGIFADDR, &ifr) < 0) {
+    if (ioctl(fd, SIOCGIFADDR, &ifr) < 0)
+    {
         return;
     }
     ret = strcpy_s(info->ip, sizeof(info->ip),
-        inet_ntoa(((struct sockaddr_in *)&(ifr.ifr_addr))->sin_addr));
-    if (ret != EOK) {
+                   inet_ntoa(((struct sockaddr_in *)&(ifr.ifr_addr))->sin_addr));
+    if (ret != EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY] CoapGetWifiIp cpy fail\n");
     }
 
@@ -518,22 +575,26 @@ void GetInterfaceInfo(int fd, const char* interfaceName, int length, InterfaceIn
 void CoapGetWifiIp(char *ip, int length)
 {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0) {
+    if (fd < 0)
+    {
         return;
     }
     InterfaceInfo info = {0};
     GetInterfaceInfo(fd, ETH, strlen(ETH) + 1, &info);
-    if (!info.flag) {
+    if (!info.flag)
+    {
         memset_s(&info, sizeof(info), 0, sizeof(info));
         GetInterfaceInfo(fd, WLAN, strlen(WLAN) + 1, &info);
     }
 
-    if (!info.flag) {
+    if (!info.flag)
+    {
         close(fd);
         return;
     }
 
-    if (strcpy_s(ip, length, info.ip) != EOK) {
+    if (strcpy_s(ip, length, info.ip) != EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY]copy ip to dst failed.\n");
     }
 
@@ -543,27 +604,35 @@ void CoapGetWifiIp(char *ip, int length)
 #if defined(__LITEOS_A__)
 static int CheckEthInfoAndNotify(InterfaceInfo *prev, const InterfaceInfo *new)
 {
-    if (prev == NULL || new == NULL) {
+    if (prev == NULL || new == NULL)
+    {
         return NSTACKX_EFAILED;
     }
-    if (prev->flag == 0 || new->flag == 0) {
+    if (prev->flag == 0 || new->flag == 0)
+    {
         prev->status = new->status;
-        if (memcpy_s(prev->ip, sizeof(prev->ip), new->ip, sizeof(new->ip))) {
+        if (memcpy_s(prev->ip, sizeof(prev->ip), new->ip, sizeof(new->ip)))
+        {
             SOFTBUS_PRINT("[DISCOVERY]fail copy ip to prev.\n");
         }
         return NSTACKX_EFAILED;
     }
 
-    if (prev->status != new->status) {
-        if (new->status == STATUS_DOWN) {
+    if (prev->status != new->status)
+    {
+        if (new->status == STATUS_DOWN)
+        {
             SOFTBUS_PRINT("Eth disconnected.\r\n");
             CoapWriteMsgQueue(CLEAR_IP_EVENT);
-        } else {
+        }
+        else
+        {
             SOFTBUS_PRINT("Eth connected.\r\n");
             CoapWriteMsgQueue(UPDATE_IP_EVENT);
         }
         prev->status = new->status;
-        if (memcpy_s(prev->ip, sizeof(prev->ip), new->ip, sizeof(new->ip))) {
+        if (memcpy_s(prev->ip, sizeof(prev->ip), new->ip, sizeof(new->ip)))
+        {
             SOFTBUS_PRINT("[DISCOVERY]fail copy ip to prev.\n");
         }
     }
@@ -574,7 +643,8 @@ static int SendCtrlCommand(const char *cmd, struct wpa_ctrl *ctrlConn, char *rep
 {
     size_t len = *replyLen - 1;
     wpa_ctrl_request(ctrlConn, cmd, strlen(cmd), reply, &len, 0);
-    if (len != 0 && strncmp(reply, "FAIL", strlen("FAIL"))) {
+    if (len != 0 && strncmp(reply, "FAIL", strlen("FAIL")))
+    {
         *replyLen = len;
         return 0;
     }
@@ -589,36 +659,45 @@ void CheckWlanInfoAndNotify(int *prev, int first)
 {
     struct wpa_ctrl *ctrlConn = wpa_ctrl_open(WLAN);
     char reply[REPLY_LENGTH] = {0};
-    if (ctrlConn == NULL) {
+    if (ctrlConn == NULL)
+    {
         SOFTBUS_PRINT("open wpa control interface failed.");
         return;
     }
     char *cmd = "STATUS";
     size_t len = REPLY_LENGTH;
     int ret = SendCtrlCommand(cmd, ctrlConn, reply, &len);
-    if (ret != 0) {
+    if (ret != 0)
+    {
         SOFTBUS_PRINT("reply:%s\n.", reply);
         wpa_ctrl_close(ctrlConn);
         return;
     }
 
     int status;
-    if (strstr(reply, WPA_CONNECTED)) {
+    if (strstr(reply, WPA_CONNECTED))
+    {
         status = UPDATE_IP_EVENT;
-    } else if (strstr(reply, WPA_DISCONNECTED)) {
+    }
+    else if (strstr(reply, WPA_DISCONNECTED))
+    {
         status = CLEAR_IP_EVENT;
-    } else {
+    }
+    else
+    {
         wpa_ctrl_close(ctrlConn);
         return;
     }
 
-    if (first) {
+    if (first)
+    {
         *prev = status;
         wpa_ctrl_close(ctrlConn);
         return;
     }
 
-    if (*prev != status) {
+    if (*prev != status)
+    {
         CoapWriteMsgQueue(status);
     }
     *prev = status;
@@ -641,12 +720,14 @@ void CoapQueryIpHandle(unsigned int uwParam1, unsigned int uwParam2, unsigned in
     int updateFlag;
     int prevFlag;
     CheckWlanInfoAndNotify(&prevFlag, 1);
-    while (g_updateIpFlag) {
+    while (g_updateIpFlag)
+    {
         usleep(HUNDRED_MS);
         memset_s(&ethInfo, sizeof(ethInfo), 0, sizeof(ethInfo));
         GetInterfaceInfo(fd, ETH, strlen(ETH) + 1, &ethInfo);
         updateFlag = CheckEthInfoAndNotify(&prevEthInfo, &ethInfo);
-        if (updateFlag != -1) {
+        if (updateFlag != -1)
+        {
             continue;
         }
         CheckWlanInfoAndNotify(&prevFlag, 0);
@@ -656,12 +737,14 @@ void CoapQueryIpHandle(unsigned int uwParam1, unsigned int uwParam2, unsigned in
 
 int CreateQueryIpThread(void)
 {
-    if (g_queryIpTaskId != -1) {
+    if (g_queryIpTaskId != -1)
+    {
         return NSTACKX_EOK;
     }
     ThreadAttr attr = {"queryIp_task", 0x800, 20, 0, 0};
-    int error = CreateThread((Runnable)CoapQueryIpHandle, NULL, &attr, (unsigned int*)&g_queryIpTaskId);
-    if (error != 0) {
+    int error = CreateThread((Runnable)CoapQueryIpHandle, NULL, &attr, (unsigned int *)&g_queryIpTaskId);
+    if (error != 0)
+    {
         SOFTBUS_PRINT("[DISCOVERY] create task fail\n");
         return NSTACKX_EFAILED;
     }
@@ -671,9 +754,11 @@ int CreateQueryIpThread(void)
 void ExitQueryIpThread(void)
 {
     g_updateIpFlag = 0;
-    if (g_queryIpTaskId != -1) {
+    if (g_queryIpTaskId != -1)
+    {
         int ret = pthread_join((pthread_t)g_queryIpTaskId, NULL);
-        if (ret != 0) {
+        if (ret != 0)
+        {
             SOFTBUS_PRINT("[DISCOVERY] ExitQueryIpThread pthread_join fail\n");
             return;
         }
@@ -687,7 +772,8 @@ int CreateCoapListenThread(void)
     g_terminalFlag = 1;
 
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
-    if (g_coapTaskId != NULL) {
+    if (g_coapTaskId != NULL)
+    {
         return NSTACKX_EOK;
     }
 
@@ -701,19 +787,22 @@ int CreateCoapListenThread(void)
     attr.priority = osPriorityNormal4; // COAP_DEFAULT_PRIO -> cmsis prio
 
     g_coapTaskId = osThreadNew((osThreadFunc_t)CoapReadHandle, NULL, &attr);
-    if (g_coapTaskId == NULL) {
+    if (g_coapTaskId == NULL)
+    {
         g_terminalFlag = 0;
         SOFTBUS_PRINT("[DISCOVERY] create task fail\n");
         return NSTACKX_EFAILED;
     }
 #else
-    if (g_coapTaskId != -1) {
+    if (g_coapTaskId != -1)
+    {
         return NSTACKX_EOK;
     }
 
     ThreadAttr attr = {"coap_listen_task", 0x800, 20, 0, 0};
     int error = CreateThread((Runnable)CoapReadHandle, NULL, &attr, (unsigned int *)&g_coapTaskId);
-    if (error != 0) {
+    if (error != 0)
+    {
         g_terminalFlag = 0;
         SOFTBUS_PRINT("[DISCOVERY] create task fail\n");
         return NSTACKX_EFAILED;
@@ -726,16 +815,20 @@ void ExitCoapListenThread(void)
 {
     g_terminalFlag = 0;
 #if defined(__LITEOS_M__) || defined(__LITEOS_RISCV__)
-    if (g_coapTaskId != NULL) {
-        if (osThreadTerminate(g_coapTaskId) != 0) {
+    if (g_coapTaskId != NULL)
+    {
+        if (osThreadTerminate(g_coapTaskId) != 0)
+        {
             SOFTBUS_PRINT("[DISCOVERY] ExitCoapListenThread pthread_join fail\n");
             return;
         }
     }
 #else
-    if (g_coapTaskId != -1) {
+    if (g_coapTaskId != -1)
+    {
         int ret = pthread_join((pthread_t)g_coapTaskId, NULL);
-        if (ret != 0) {
+        if (ret != 0)
+        {
             SOFTBUS_PRINT("[DISCOVERY] ExitCoapListenThread pthread_join fail\n");
             return;
         }
@@ -746,24 +839,28 @@ void ExitCoapListenThread(void)
 int CoapInitDiscovery(void)
 {
     int ret = CoapInitSocket();
-    if (ret != NSTACKX_EOK) {
+    if (ret != NSTACKX_EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Init socket fail\n");
         return ret;
     }
 
     ret = CoapInitWifiEvent();
-    if (ret != NSTACKX_EOK) {
+    if (ret != NSTACKX_EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Init wifi event fail\n");
         return ret;
     }
 #if defined(__LITEOS_A__)
     ret = CreateQueryIpThread();
-    if (ret != NSTACKX_EOK) {
+    if (ret != NSTACKX_EOK)
+    {
         SOFTBUS_PRINT("[DISCOVERY] Init query Ip fail\n");
         return ret;
     }
 #endif
-    if (CreateMsgQueThread() != NSTACKX_EOK) {
+    if (CreateMsgQueThread() != NSTACKX_EOK)
+    {
         return NSTACKX_EFAILED;
     }
     return CreateCoapListenThread();
@@ -773,7 +870,8 @@ int CoapDeinitDiscovery(void)
 {
     ExitCoapListenThread();
     int rtn = CoapDeinitWifiEvent();
-    if (rtn != NSTACKX_EOK) {
+    if (rtn != NSTACKX_EOK)
+    {
         return NSTACKX_EFAILED;
     }
 #if defined(__LITEOS_A__)
@@ -789,34 +887,41 @@ int CoapDeinitDiscovery(void)
 #define IP_MIN_LEN 7
 int CheckIpIsValid(const char *ip, int length)
 {
-    if (ip == NULL || length < IP_MIN_LEN || length > IP_MAX_LEN) {
+    if (ip == NULL || length < IP_MIN_LEN || length > IP_MAX_LEN)
+    {
         return -1;
     }
 
-    if (strcmp(ip, "0.0.0.0") == 0) {
+    if (strcmp(ip, "0.0.0.0") == 0)
+    {
         return -1;
     }
     int pos = length - 1;
-    if (ip[pos] == '1' && ip[pos - 1] == '.') {
+    if (ip[pos] == '1' && ip[pos - 1] == '.')
+    {
         return -1;
     }
     return 0;
 }
 void CoapGetIp(char *ip, int length, int finite)
 {
-    if (ip == NULL || length != NSTACKX_MAX_IP_STRING_LEN) {
+    if (ip == NULL || length != NSTACKX_MAX_IP_STRING_LEN)
+    {
         return;
     }
 
     g_queryIpFlag = 1;
     int count = finite ? GET_IP_TIMES : GET_IP_INFINITE;
-    while (g_queryIpFlag) {
+    while (g_queryIpFlag)
+    {
         CoapGetWifiIp(ip, length);
-        if (CheckIpIsValid(ip, strlen(ip)) == 0) {
+        if (CheckIpIsValid(ip, strlen(ip)) == 0)
+        {
             break;
         }
 
-        if (count == 0) {
+        if (count == 0)
+        {
             break;
         }
         count--;

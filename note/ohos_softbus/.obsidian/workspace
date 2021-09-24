@@ -4,12 +4,12 @@
     "type": "split",
     "children": [
       {
-        "id": "083d8adc565df557",
+        "id": "d23fd5c2f6d64165",
         "type": "leaf",
         "state": {
           "type": "markdown",
           "state": {
-            "file": "1 设备发现能力.md",
+            "file": "1.1InitService.md",
             "mode": "source"
           }
         }
@@ -68,7 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "1 设备发现能力.md",
+                "file": "1.1InitService.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -85,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "1 设备发现能力.md"
+                "file": "1.1InitService.md"
               }
             }
           }
@@ -96,11 +96,12 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "083d8adc565df557",
+  "active": "d23fd5c2f6d64165",
   "lastOpenFiles": [
+    "1.1InitService.md",
     "1 设备发现能力.md",
-    "设备发现能力.md",
     "未命名.md",
+    "设备发现能力.md",
     "Overview.md"
   ]
 }
