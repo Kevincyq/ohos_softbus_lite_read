@@ -233,7 +233,7 @@ static int COAP_CreateHeader(COAP_Packet *pkt, const COAP_PacketParam *pktParam,
     }
 
     pkt->header.type = (unsigned int)pktParam->type & 0x03;
-    pkt->header.ver = COAP_VERSION;
+    pkt->header.ver = COAP_VERSION;//1
     pkt->header.code = pktParam->code;
 
     if (pkt->protocol == COAP_UDP) {
@@ -247,7 +247,7 @@ static int COAP_CreateHeader(COAP_Packet *pkt, const COAP_PacketParam *pktParam,
     } else {
         return DISCOVERY_ERR_NOT_SUPPORTED;
     }
-    pkt->len = buf->len = HEADER_LEN;
+    pkt->len = buf->len = HEADER_LEN;//4
     return DISCOVERY_ERR_SUCCESS;
 }
 

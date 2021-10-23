@@ -40,7 +40,7 @@ int CoapCreateUdpServer(const struct sockaddr_in *sockAddr)
 
     struct sockaddr_in localAddr;
     socklen_t len = sizeof(localAddr);
-    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0); //Ipv4 网络协议,使用不连续不可信赖的数据包连接
     if (sockfd < 0) {
         return NSTACKX_OVERFLOW;
     }

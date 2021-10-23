@@ -9,8 +9,8 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "1.1InitService.md",
-            "mode": "source"
+            "file": "1 设备发现能力.md",
+            "mode": "preview"
           }
         }
       }
@@ -68,7 +68,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "1.1InitService.md",
+                "file": "1 设备发现能力.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -85,7 +85,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "1.1InitService.md"
+                "file": "1 设备发现能力.md"
               }
             }
           }
@@ -98,8 +98,8 @@
   },
   "active": "d23fd5c2f6d64165",
   "lastOpenFiles": [
-    "1.1InitService.md",
     "1 设备发现能力.md",
+    "1.1InitService.md",
     "未命名.md",
     "设备发现能力.md",
     "Overview.md"

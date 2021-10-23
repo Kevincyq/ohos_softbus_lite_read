@@ -232,6 +232,7 @@ void PostServiceDiscover(const COAP_Packet *pkt)
     }
 
     (void)memset_s(&deviceInfo, sizeof(deviceInfo), 0, sizeof(deviceInfo));
+    //继续深度解包，涉及到了对报文的解析，之后可以获得发包者信息，填入到了deviceInfo中
     if (GetServiceDiscoverInfo(pkt->payload.buffer, pkt->payload.len, &deviceInfo, &remoteUrl) != NSTACKX_EOK)
     {
         return;
@@ -257,6 +258,7 @@ static void HandleReadEvent(int fd)
         return;
     }
     ssize_t nRead;
+    //读取socket的内容
     nRead = CoapSocketRecv(socketFd, recvBuffer, COAP_MAX_PDU_SIZE);
     if ((nRead == 0) || (nRead < 0 && errno != EAGAIN &&
                          errno != EWOULDBLOCK && errno != EINTR))
@@ -264,11 +266,13 @@ static void HandleReadEvent(int fd)
         free(recvBuffer);
         return;
     }
-
+    //创建一个空的标准coap包
     COAP_Packet decodePacket;
     (void)memset_s(&decodePacket, sizeof(COAP_Packet), 0, sizeof(COAP_Packet));
     decodePacket.protocol = COAP_UDP;
+    //coap检查与解码
     COAP_SoftBusDecode(&decodePacket, recvBuffer, nRead);
+    //处理解码后的报文
     PostServiceDiscover(&decodePacket);
     free(recvBuffer);
 }

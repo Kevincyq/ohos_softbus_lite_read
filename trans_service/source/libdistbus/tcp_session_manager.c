@@ -158,7 +158,7 @@ static int InitSelectList(const TcpSessionMgr *tsm, fd_set *rfds, fd_set *except
     return maxFd;
 }
 
-static int InitGSessionMgr(void)
+static int fInitGSessionMgr(void)
 {
     if (g_sessionMgr != NULL) {
         return 0;
@@ -390,7 +390,7 @@ static cJSON *TransFirstPkg2Json(const char *buffer, int bufferSize)
         SOFTBUS_PRINT("[TRANS] bufferSize < AUTH_PACKET_HEAD_SIZE\n");
         return NULL;
     }
-    
+
     int offset = AUTH_PACKET_HEAD_SIZE - sizeof(int);
     int dataLen = GetIntFromBuf(buffer, offset) - SESSION_KEY_INDEX_SIZE;
     if (dataLen <= 0 || dataLen > (RECIVED_BUFF_SIZE - AUTH_PACKET_HEAD_SIZE)) {
@@ -895,19 +895,22 @@ int CreateTcpSessionMgr(bool asServer, const char* localIp)
         return TRANS_FAILED;
     }
 
-    int ret = InitGSessionMgr();
+    int ret = InitGSessionMgr();//为g_sessionMgr分配存储空间及初始化
+
     if (ReleaseTcpMgrLock() != 0 || ret != 0) {
         FreeSessionMgr();
         return TRANS_FAILED;
     }
     g_sessionMgr->asServer = asServer;
+
+    //创建socket文件描述符
     int listenFd = OpenTcpServer(localIp, DEFAULT_TRANS_PORT);
     if (listenFd < 0) {
         SOFTBUS_PRINT("[TRANS] CreateTcpSessionMgr OpenTcpServer fail\n");
         FreeSessionMgr();
         return TRANS_FAILED;
     }
-    int rc = listen(listenFd, LISTEN_BACKLOG);
+    int rc = listen(listenFd, LISTEN_BACKLOG);//监听
     if (rc != 0) {
         SOFTBUS_PRINT("[TRANS] CreateTcpSessionMgr listen fail\n");
         CloseSession(listenFd);
