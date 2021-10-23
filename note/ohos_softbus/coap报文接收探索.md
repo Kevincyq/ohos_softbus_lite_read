@@ -176,7 +176,7 @@ static void HandleReadEvent(int fd)
 }
 ```
 
-#### CoapSocketRecv
+### CoapSocketRecv
 
 ```c
 //discovery\coap\source\coap_socket.c 
@@ -224,7 +224,7 @@ struct in_addr
 
 
 
-#### COAP_SoftBusDecode
+### COAP_SoftBusDecode
 
 ```c
 //discovery\coap\source\coap_adapter.c
@@ -280,7 +280,7 @@ int COAP_SoftBusDecode(COAP_Packet *pkt, const unsigned char *buf, unsigned int 
 }
 ```
 
-#### PostServiceDiscover
+### PostServiceDiscover
 
 ```c
 //discovery\coap\source\coap_discover.c
@@ -308,6 +308,7 @@ void PostServiceDiscover(const COAP_Packet *pkt)
     if (remoteUrl != NULL)
     {
         //通过解析到的手机(发现端)的地址，应答服务
+  		//wifiIpAddr就是目的ip
         CoapResponseService(pkt, remoteUrl, wifiIpAddr);
         free(remoteUrl);
     }
@@ -331,6 +332,56 @@ typedef struct DeviceInfo {
 
 
 
+## 封装并且发送包
+
+```c
+//discovery\coap\source\coap_discover.c
+static int CoapResponseService(const COAP_Packet *pkt, const char *remoteUrl, const char *remoteIp)
+{
+    int ret;
+    CoapRequest coapRequest;
+    (void)memset_s(&coapRequest, sizeof(coapRequest), 0, sizeof(coapRequest));
+    coapRequest.remoteUrl = remoteUrl;
+    coapRequest.remoteIp = remoteIp;
+    //
+    char *payload = PrepareServiceDiscover();
+    if (payload == NULL)
+    {
+        return NSTACKX_EFAILED;
+    }
+	
+    COAP_ReadWriteBuffer sndPktBuff = {0};
+    sndPktBuff.readWriteBuf = calloc(1, COAP_MAX_PDU_SIZE);
+    if (sndPktBuff.readWriteBuf == NULL)
+    {
+        free(payload);
+        return NSTACKX_EFAILED;
+    }
+    sndPktBuff.size = COAP_MAX_PDU_SIZE;
+    sndPktBuff.len = 0;
+    
+	//构建要发回的包
+    ret = BuildSendPkt(pkt, remoteIp, payload, &sndPktBuff);
+    free(payload);
+    if (ret != DISCOVERY_ERR_SUCCESS)
+    {
+        free(sndPktBuff.readWriteBuf);
+        sndPktBuff.readWriteBuf = NULL;
+        return ret;
+    }
+    coapRequest.data = sndPktBuff.readWriteBuf;
+    coapRequest.dataLength = sndPktBuff.len;
+    //发送包
+    ret = CoapSendRequest(&coapRequest);
+    free(sndPktBuff.readWriteBuf);
+    sndPktBuff.readWriteBuf = NULL;
+
+    return ret;
+}
+```
+
+![image-20211023191647939](https://picgo-1305367394.cos.ap-beijing.myqcloud.com/picgo/202110231916303.png)
+
 ## 修改日志
 
 - ce91aaa545102f733607219a5d48fa940d3b51f0：测试select返回值
@@ -343,6 +394,139 @@ typedef struct DeviceInfo {
 
   ![image-20211023163046463](https://picgo-1305367394.cos.ap-beijing.myqcloud.com/picgo/202110231630530.png)
 
-- 可以对包的内容完成解析
+- f13f6f1ae03cee19bc17c6bb802d8f6e8ad69e4a可以对包的内容完成解析
 
   ![image-20211023172236044](https://picgo-1305367394.cos.ap-beijing.myqcloud.com/picgo/202110231722154.png)
+
+- 强行修改目的ip为主机ip来帮助捕获报文
+
+  ![image-20211023183132965](https://picgo-1305367394.cos.ap-beijing.myqcloud.com/picgo/202110231831163.png)
+
+
+
+# 连接请求和数据处理
+
+## 线程创建
+
+由 `StartListener`创建侦听的线程，然后调用 `WaitProcess`函数，同样采用`select`方法来侦听，然后调用`ProcessAuthData`函数
+
+```c
+//trans_service\source\libdistbus\auth_conn_manager.c
+static void WaitProcess(void)
+{
+    SOFTBUS_PRINT("[TRANS] WaitProcess begin\n");
+    fd_set readSet;
+    fd_set exceptfds;
+
+    while (1) 
+    {
+        //清零 readSet 和 exceptfds
+        FD_ZERO(&readSet);
+        FD_ZERO(&exceptfds);
+        // 设置g_listenFd
+        FD_SET(g_listenFd, &readSet);
+        if (g_dataFd >= 0) 
+        {
+            // 设置g_dataFd
+            FD_SET(g_dataFd, &readSet);
+            FD_SET(g_dataFd, &exceptfds);
+        }
+        int ret = select(g_maxFd + 1, &readSet, NULL, &exceptfds, NULL);
+        if (ret > 0) {
+            if (!ProcessAuthData(g_listenFd, &readSet)) {
+                SOFTBUS_PRINT("[TRANS] WaitProcess ProcessAuthData fail\n");
+                StopListener();
+                break;
+            }
+        } else if (ret < 0) {
+            if (errno == EINTR || (g_dataFd > 0 && FD_ISSET(g_dataFd, &exceptfds))) {
+                SOFTBUS_PRINT("[TRANS] errno == EINTR or g_dataFd is in exceptfds set.\n");
+                CloseAuthSessionFd(g_dataFd);
+                continue;
+            }
+            SOFTBUS_PRINT("[TRANS] WaitProcess select fail, stop listener\n");
+            StopListener();
+            break;
+        }
+    }
+}
+
+int StartListener(BaseListener *callback, const char *ip)
+{
+    if (callback == NULL || ip == NULL) {
+        return -DBE_BAD_PARAM;
+    }
+
+    g_callback = callback;
+
+    int rc = InitListenFd(ip, SESSIONPORT);
+    if (rc != DBE_SUCCESS) {
+        return -DBE_BAD_PARAM;
+    }
+
+    osThreadAttr_t attr;
+    attr.name = "trans_auth_task";
+    attr.attr_bits = 0U;
+    attr.cb_mem = NULL;
+    attr.cb_size = 0U;
+    attr.stack_mem = NULL;
+    attr.stack_size = LOSCFG_BASE_CORE_TSK_DEFAULT_STACK_SIZE;
+    attr.priority = osPriorityNormal5; // LOSCFG_BASE_CORE_TSK_DEFAULT_PRIO -> cmsis prio
+
+    g_uwTskLoID = osThreadNew((osThreadFunc_t)WaitProcess, NULL, &attr);
+    if (NULL == g_uwTskLoID) {
+        SOFTBUS_PRINT("[TRANS] StartListener task create fail\n");
+        return -1;
+    }
+
+    SOFTBUS_PRINT("[TRANS] StartListener ok\n");
+    return GetSockPort(g_listenFd);
+}
+```
+
+### ProcessAuthData
+
+```c
+static bool ProcessAuthData(int listenFd, const fd_set *readSet)
+{
+    SOFTBUS_PRINT("[CZT_TEST] enter ProcessAuthData\n");
+    if (readSet == NULL || g_callback == NULL || g_callback->onConnectEvent == NULL ||
+        g_callback->onDataEvent == NULL) {
+        return false;
+    }
+    //判断是否是listenFd上存在消息
+    if (FD_ISSET(listenFd, readSet))
+    {
+        SOFTBUS_PRINT("[CZT_TEST] New connections exist,listenFd is set\n");
+        struct sockaddr_in addrClient = {0};
+        socklen_t addrLen = sizeof(addrClient);
+        //如果是，则说明当前存在新的连接，这时调用accept()完成链接创建，新创建的socket的fd被存储在g_dataFd中
+        g_dataFd = accept(listenFd, (struct sockaddr *)(&addrClient), &addrLen);
+        if (g_dataFd < 0) {
+            CloseAuthSessionFd(listenFd);
+            return false;
+        }
+        //刷新g_maxFd，以保证在WaitProcess()中的下一次select()操作时中，会监听到g_dataFd上的事件。
+        RefreshMaxFd(g_dataFd);
+        //调用onConnectEvent通知认证模块有新的连接事件发生，并将新创建的fd和client的IP地址告知认证模块
+        if (g_callback->onConnectEvent(g_dataFd, inet_ntoa(addrClient.sin_addr)) != 0) {
+            CloseAuthSessionFd(g_dataFd);
+        }
+    }
+
+    //如果FD_ISSET()判断出g_dataFd上存在消息，则说明已完成握手的连接向本节点发送了数据，
+    if (g_dataFd > 0 && FD_ISSET(g_dataFd, readSet))
+    {
+        SOFTBUS_PRINT("[CZT_TEST] g_dataFd is set\n");
+        g_callback->onDataEvent(g_dataFd);
+    }
+
+    return true;
+}
+```
+
+
+
+## 修改日记
+
+- 5c3416bb982f098fc22ab2fe7fdff3306afc304c 检测ProcessAuthData以及WaitProcess情况
